@@ -132,6 +132,21 @@ app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend/public/index.html'));
 });
 
+// Reset all statuses at midnight every day
+function scheduleMidnightReset() {
+  const now = new Date();
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0); // next midnight
+  const msUntilMidnight = midnight - now;
+  setTimeout(() => {
+    db.run('DELETE FROM bank_status');
+    saveDB();
+    console.log('✅ Midnight reset — all bank statuses cleared');
+    scheduleMidnightReset(); // schedule next day
+  }, msUntilMidnight);
+  console.log('⏰ Next reset in ' + Math.round(msUntilMidnight/1000/60) + ' minutes');
+}
+
 initDB().then(() => {
   app.listen(PORT, () => {
     console.log(`✅ Bourse Tracker running on http://localhost:${PORT}`);
