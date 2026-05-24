@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bourse Tracker — Marrakech</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --green:#00C26F;--green-dark:#007A46;
+      --red:#FF3B3B;--red-dark:#A10000;
+      --blue:#1E6FFF;--blue-dark:#0040BF;
+      --gold:#C9A84C;
+      --bg:#0E0F0C;--surface:#181910;--surface2:#222318;
+      --border:rgba(255,255,255,0.07);--text:#F5F4EE;--muted:#888880;
+    }
+    html,body{height:100%;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+    header{padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+    .logo{display:flex;align-items:center;gap:10px;}
+    .logo-icon{width:34px;height:34px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:17px;}
+    .logo-text{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.02em;}
+    .logo-sub{font-size:11px;color:var(--muted);font-weight:300;letter-spacing:.06em;text-transform:uppercase;}
+    #period-badge{font-size:12px;padding:5px 12px;border-radius:100px;font-weight:500;}
+    .badge-active{background:rgba(0,194,111,0.15);color:var(--green);border:1px solid rgba(0,194,111,0.3);}
+    .badge-before{background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
+    .badge-after{background:rgba(255,59,59,0.15);color:var(--red);border:1px solid rgba(255,59,59,0.3);}
+    .badge-none{background:rgba(136,136,128,0.15);color:var(--muted);border:1px solid rgba(136,136,128,0.2);}
+
+    .main{flex:1;display:flex;min-height:0;}
+    .sidebar{width:270px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+    .sidebar-section{padding:.85rem 1.25rem;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .sidebar-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+    .legend-item{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px;color:var(--text);}
+    .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+    .search-wrap{padding:.6rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .search-input{width:100%;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;}
+    .search-input::placeholder{color:var(--muted);}
+    .search-input:focus{border-color:rgba(201,168,76,0.4);}
+
+    .bank-list{flex:1;overflow-y:auto;}
+    .bank-item{padding:8px 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .12s;}
+    .bank-item:hover{background:var(--surface2);}
+    .bank-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;transition:background .3s;}
+    .bank-info{flex:1;min-width:0;}
+    .bank-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .bank-addr{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .bank-time{font-size:10px;color:var(--muted);margin-top:1px;}
+
+    .map-wrap{flex:1;position:relative;}
+    #map{width:100%;height:100%;}
+    .leaflet-tile-pane{filter:brightness(.6) saturate(.7) hue-rotate(5deg);}
+    .leaflet-control-zoom a{background:var(--surface)!important;color:var(--text)!important;border-color:var(--border)!important;}
+    .leaflet-control-attribution{display:none;}
+
+    #popup-panel{display:none;position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;background:var(--surface);border:1px solid rgba(255,255,255,0.13);border-radius:14px;padding:.85rem 1rem;width:320px;max-width:calc(100vw - 2rem);box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+    .popup-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1px;}
+    .popup-name{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;line-height:1.25;}
+    .popup-close{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0 0 0 8px;flex-shrink:0;}
+    .popup-addr{font-size:10px;color:var(--muted);margin-bottom:1px;}
+    .popup-updated{font-size:10px;color:var(--muted);font-style:italic;margin-bottom:7px;}
+    .popup-status-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:500;padding:2px 8px;border-radius:100px;margin-bottom:6px;}
+    .popup-actions{display:flex;gap:6px;margin-bottom:7px;}
+    .popup-btn{flex:1;padding:6px 6px;border-radius:7px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;transition:opacity .15s,transform .1s;}
+    .popup-btn:hover{opacity:.88;}.popup-btn:active{transform:scale(.97);}
+    .btn-green{background:var(--green);color:#fff;}
+    .btn-red{background:var(--red);color:#fff;}
+
+    .transport-section{margin-top:0;}
+    .transport-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+    .transport-row{display:flex;gap:4px;margin-bottom:5px;}
+    .transport-btn{flex:1;padding:4px 2px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;}
+    .transport-btn.active{border-color:var(--gold);background:rgba(201,168,76,0.12);color:var(--gold);}
+    .btn-directions{width:100%;padding:5px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:var(--text);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:4px;transition:background .15s;}
+    .btn-directions:hover{background:var(--surface2);}
+    .loc-note{font-size:9px;color:var(--muted);text-align:center;margin-top:4px;}
+
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid rgba(255,255,255,0.12);border-radius:100px;padding:9px 18px;font-size:13px;color:var(--text);z-index:3000;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;}
+    .toast.show{transform:translateX(-50%) translateY(0);}
+
+    @media(max-width:640px){.sidebar{display:none;}header{padding:.75rem 1rem;}}
+    @keyframes radar-ping{0%{transform:translate(-50%,-50%) scale(1);opacity:.75;}100%{transform:translate(-50%,-50%) scale(3.8);opacity:0;}}
+    @keyframes pin-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.22);}}
+    .radar-ring{position:absolute;width:24px;height:24px;border-radius:50%;top:0;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:radar-ping 1.1s ease-out infinite;}
+    .pin-blink{animation:pin-pulse 0.85s ease-in-out infinite;}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏦</div>
+    <div>
+      <div class="logo-text">Bourse Tracker</div>
+      <div class="logo-sub">Bank Populaire · Marrakech</div>
+    </div>
+  </div>
+  <div id="period-badge" class="badge-none">No period set</div>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Legend</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1E6FFF"></div>Not yet reported</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00C26F"></div>Bourse available ✓</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FF3B3B"></div>No bourse ✗</div>
+    </div>
+    <div class="search-wrap">
+      <input class="search-input" type="text" id="search" placeholder="Search branches…" oninput="filterBanks(this.value)"/>
+    </div>
+    <div class="bank-list" id="bank-list"></div>
+  </aside>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+
+    <div id="popup-panel">
+      <div class="popup-header">
+        <div class="popup-name" id="popup-name"></div>
+        <button class="popup-close" onclick="closePopup()">×</button>
+      </div>
+      <div class="popup-addr" id="popup-addr"></div>
+      <div id="popup-status-badge" class="popup-status-badge" style="display:none"></div>
+      <div class="popup-updated" id="popup-updated"></div>
+      <div class="popup-actions" id="popup-actions">
+        <button class="popup-btn btn-green" onclick="setStatus('green')">✓ Bourse here</button>
+        <button class="popup-btn btn-red" onclick="setStatus('red')">✗ No bourse</button>
+      </div>
+      <div class="transport-section">
+        <div class="transport-label">Get directions by</div>
+        <div class="transport-row">
+          <button class="transport-btn active" id="t-walking" onclick="selectTransport('walking')">🚶 Walking</button>
+          <button class="transport-btn" id="t-driving" onclick="selectTransport('driving')">🚗 Car</button>
+          <button class="transport-btn" id="t-transit" onclick="selectTransport('transit')">🚌 Bus</button>
+        </div>
+        <button class="btn-directions" onclick="openDirections()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          Get directions
+        </button>
+        <div class="loc-note" id="loc-note">📍 Share location for better directions</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const BANKS = [
+  // --- Guéliz / Centre ---
+  {id:'b01', name:'Agence Guéliz — Av. Mohammed V',       address:'65 Av. Mohammed V',                  lat:31.6362284, lng:-8.0153589},
+  {id:'b02', name:'Agence Bd Abdelkrim Al Khattabi',      address:'Bd Abdelkrim Al Khattabi',           lat:31.6346481, lng:-8.0168492},
+  {id:'b03', name:'Siège Régional BP',                    address:'Bd Abdelkrim Al Khattabi (Siège)',   lat:31.6494289, lng:-8.0200140},
+  {id:'b04', name:'Agence Majorelle — Av. Yacoub',        address:'7 Av. Yacoub El Mansour',            lat:31.6395168, lng:-8.0028267},
+  {id:'b05', name:'Agence Ibn Tofail',                    address:'Av. Ibn Tofail, Guéliz',             lat:31.6379238, lng:-8.0128072},
+  {id:'b06', name:'Agence Allal El Fassi (1)',            address:'Bd Allal El Fassi',                  lat:31.6451417, lng:-8.0001820},
+  {id:'b07', name:'Agence Allal El Fassi (2) — 46',      address:'46 Bd Allal El Fassi',               lat:31.6666481, lng:-8.0111421},
+  {id:'b08', name:'Agence Av. Omar Khayyam',              address:'Av. Omar Khayyam',                   lat:31.6420000, lng:-8.0230000},
+  {id:'b09', name:'Agence Av. Mohammadia',                address:'Av. Mohammadia',                     lat:31.6480000, lng:-8.0080000},
+  {id:'b10', name:'Agence Marrakech Plaza',               address:'Av. Mohammed V (Plaza)',             lat:31.6330060, lng:-8.0080006},
+  // --- Izdihar / Mabrouka / Targa / Sidi Ghanem ---
+  {id:'b11', name:'Agence Izdihar',                       address:'841 Route de Safi',                  lat:31.6651417, lng:-8.0327674},
+  {id:'b12', name:'Agence Mabrouka',                      address:'Quartier Mabrouka',                  lat:31.6561166, lng:-8.0328298},
+  {id:'b13', name:'Agence Sidi Ghanem',                   address:'Zone Sidi Ghanem',                   lat:31.6735253, lng:-8.0437665},
+  {id:'b14', name:'Agence Targa',                         address:'Quartier Targa',                     lat:31.6620000, lng:-8.0550000},
+  {id:'b15', name:'Agence Daoudiate',                     address:'Quartier Daoudiate',                 lat:31.6520000, lng:-8.0450000},
+  {id:'b16', name:'Agence Amarchich',                     address:'Quartier Amarchich',                 lat:31.6600000, lng:-8.0150000},
+  {id:'b17', name:'Agence Aïn Mezouar',                   address:'Quartier Aïn Mezouar',               lat:31.6700000, lng:-8.0250000},
+  // --- Médina ---
+  {id:'b18', name:'Agence Place Jemaa El Fna',            address:'Place Jemaa El Fna',                 lat:31.6259300, lng:-7.9891600},
+  {id:'b19', name:'Agence Koutoubia',                     address:'Près de la Koutoubia, Médina',       lat:31.6237205, lng:-7.9936196},
+  {id:'b20', name:'Agence Rue Moulay Ismail',             address:'Rue Bani Marine, Médina',            lat:31.6230167, lng:-7.9910222},
+  {id:'b21', name:'Agence Rue Boutouil',                  address:'Rue Boutouil, Médina',               lat:31.6350841, lng:-7.9980699},
+  {id:'b22', name:'Agence Rue El Imam Malik',             address:'Rue El Imam Malik, Médina',          lat:31.6314601, lng:-8.0107069},
+  {id:'b23', name:'Agence Rue Ibn Aicha',                 address:'Rue Ibn Aicha, Médina',              lat:31.6314601, lng:-8.0060000},
+  {id:'b24', name:'Agence Rue Riad Laarous',              address:'Rue Riad Laarous, Médina',           lat:31.6231535, lng:-7.9894432},
+  {id:'b25', name:'Agence Riad Salam',                    address:'Quartier Riad Salam',                lat:31.6270000, lng:-8.0000000},
+  {id:'b26', name:'Agence Av. Imam Mouslim',              address:'Av. Imam Mouslim',                   lat:31.6206300, lng:-8.0125543},
+  {id:'b27', name:'Agence N7 — Immeuble Yassmine',        address:'N7, Immeuble Yassmine',              lat:31.6283812, lng:-8.0009940},
+  {id:'b28', name:'Agence Door Gmat — Av. Al Oued',       address:'Av. Al Oued, Door Gmat',             lat:31.6221687, lng:-7.9701168},
+  // --- Menara / Agdal ---
+  {id:'b29', name:'Agence Menara — Av. Moulay Hassan',    address:'Av. Moulay El Hassan',               lat:31.6290443, lng:-8.0042516},
+  {id:'b30', name:'Agence Khattabi',                      address:'Bd Abdelkrim Al Khattabi (sud)',     lat:31.6271440, lng:-8.0393640},
+  // --- Route de Fès / Est ---
+  {id:'b31', name:'Agence Route de Fès (1)',              address:'150 Route de Fès',                   lat:31.6456023, lng:-7.9785158},
+  {id:'b32', name:'Agence Route de Fès (2)',              address:'Route de Fès (nord)',                lat:31.6520000, lng:-7.9720000},
+  {id:'b33', name:'Guichet Av. El Glaoui',                address:'Av. El Glaoui',                      lat:31.6335857, lng:-7.9920280},
+  // --- Hay Hassani / Al Andalibe / Ouest ---
+  {id:'b34', name:'Agence Al Andalibe',                   address:'Rue Al Andalibe',                    lat:31.6327129, lng:-8.0537885},
+  {id:'b35', name:'Agence Addoha — Route Agadir',         address:"N8, Route d'Agadir",                 lat:31.6283239, lng:-8.0664701},
+  {id:'b36', name:'Agence Tinmel — Av. Dakhla',           address:'Av. Dakhla',                         lat:31.6352531, lng:-8.0584893},
+  {id:'b37', name:'Agence Tayiba',                        address:'Quartier Tayiba',                    lat:31.6219605, lng:-8.0515395},
+  {id:'b38', name:'Agence Hay Hassani',                   address:'Hay Hassani',                        lat:31.6090000, lng:-8.0340000},
+  {id:'b39', name:'Agence Bentachfine',                   address:'Quartier Bentachfine',               lat:31.6150000, lng:-8.0480000},
+  // --- Atlas / Guemassa / Sud ---
+  {id:'b40', name:'Agence Atlas — Av. Guemassa',          address:'Av. Guemassa, Atlas',                lat:31.5952070, lng:-8.0282133},
+  {id:'b41', name:'Agence Av. Guemassa (2)',              address:'Av. Guemassa (sud)',                 lat:31.5878890, lng:-8.0395304},
+  {id:'b42', name:'Agence Maatalah',                      address:'Quartier Maatalah',                  lat:31.5971613, lng:-8.0492489},
+  {id:'b43', name:'Agence Hay Mohammadi',                 address:'Hay Mohammadi (sud)',                lat:31.5807739, lng:-8.0539847},
+  {id:'b44', name:'Agence Al Orouba',                     address:'Av. Al Orouba',                      lat:31.5943843, lng:-8.0517078},
+  // --- M'hamid / Sidi Youssef ---
+  {id:'b45', name:"Agence M'hamid",                       address:"Quartier M'hamid",                   lat:31.5880000, lng:-8.0200000},
+  {id:'b46', name:'Agence Sidi Youssef Ben Ali',          address:'Av. Sidi Youssef Ben Ali',           lat:31.6180000, lng:-7.9980000},
+  {id:'b47', name:'Agence Rue Jamiaat Ben Youssef',        address:'Rue Jamiaat Ben Youssef',            lat:31.661066, lng:-8.006753},
+];
+
+let map, markers={}, statuses={}, period={}, selectedBank=null, travelMode='walking';
+let userLat=null, userLng=null;
+
+function colorOf(s){return s==='green'?'#00C26F':s==='red'?'#FF3B3B':'#C9A84C';}
+function borderOf(s){return s==='green'?'#007A46':s==='red'?'#A10000':'#8A6E28';}
+
+function makeIcon(status, blinking=false){
+  const c=colorOf(status),b=borderOf(status);
+  const ring=blinking?`<div class="radar-ring" style="background:${c}"></div>`:'';
+  const cls=blinking?'pin-blink':'';
+  const html=`<div style="position:relative;width:24px;height:32px;" class="${cls}">${ring}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32"><path d="M12 0C5.373 0 0 5.373 0 12c0 8 12 20 12 20s12-12 12-20C24 5.373 18.627 0 12 0z" fill="${c}" stroke="${b}" stroke-width="1.5"/><circle cx="12" cy="12" r="5" fill="rgba(255,255,255,0.35)"/></svg></div>`;
+  return L.divIcon({className:'',html:html,iconSize:[24,32],iconAnchor:[12,32],popupAnchor:[0,-32]});
+}
+
+function isWithinPeriod(){
+  if(!period.start_date||!period.end_date) return null;
+  const now=new Date(); now.setHours(0,0,0,0);
+  const s=new Date(period.start_date),e=new Date(period.end_date);
+  if(now<s) return 'before'; if(now>e) return 'after'; return 'active';
+}
+
+function updateBadge(){
+  const el=document.getElementById('period-badge'),st=isWithinPeriod();
+  if(!st){el.className='badge-none';el.textContent='No period set';return;}
+  if(st==='active'){el.className='badge-active';el.textContent=`Bourse active · ends ${period.end_date}`;}
+  else if(st==='before'){el.className='badge-before';el.textContent=`Starts ${period.start_date}`;}
+  else{el.className='badge-after';el.textContent=`Ended ${period.end_date}`;}
+}
+
+function renderBankList(filter=''){
+  const el=document.getElementById('bank-list');
+  const f=filter.toLowerCase();
+  el.innerHTML=BANKS.filter(b=>!f||b.name.toLowerCase().includes(f)||b.address.toLowerCase().includes(f)).map(b=>{
+    const entry=statuses[b.id],status=entry?entry.status:'blue',color=colorOf(status);
+    let timeStr='';
+    if(entry){const m=Math.round((Date.now()-entry.updatedAt)/60000);timeStr=m<60?`${m}m ago`:`${Math.floor(m/60)}h ago`;}
+    return `<div class="bank-item" onclick="flyTo('${b.id}')">
+      <div class="bank-dot" id="list-dot-${b.id}" style="background:${color}"></div>
+      <div class="bank-info">
+        <div class="bank-name">${b.name}</div>
+        <div class="bank-addr">${b.address}</div>
+        ${timeStr?`<div class="bank-time">${timeStr}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterBanks(val){ renderBankList(val); }
+
+function renderMarkers(){
+  BANKS.forEach(b=>{
+    const entry=statuses[b.id],status=entry?entry.status:'blue';
+    const blink=selectedBank&&selectedBank.id===b.id;
+    if(markers[b.id]){
+      markers[b.id].setIcon(makeIcon(status,blink));
+    } else {
+      const m=L.marker([b.lat,b.lng],{icon:makeIcon(status,blink)}).addTo(map);
+      m.on('click',()=>openPopup(b));
+      markers[b.id]=m;
+    }
+    const dot=document.getElementById(`list-dot-${b.id}`);
+    if(dot) dot.style.background=colorOf(status);
+  });
+}
+
+function flyTo(id){
+  const b=BANKS.find(x=>x.id===id); if(!b) return;
+  map.flyTo([b.lat,b.lng],16,{duration:.8});
+  setTimeout(()=>openPopup(b),600);
+}
+
+function openPopup(bank){
+  selectedBank=bank;
+  document.getElementById('popup-name').textContent=bank.name;
+  document.getElementById('popup-addr').textContent=bank.address;
+
+  const entry=statuses[bank.id];
+  const badge=document.getElementById('popup-status-badge');
+  const actions=document.getElementById('popup-actions');
+  const st=isWithinPeriod();
+
+  if(entry){
+    const m=Math.round((Date.now()-entry.updatedAt)/60000);
+    const timeAgo=m<60?`${m} min ago`:`${Math.floor(m/60)}h ago`;
+    const expiresIn=Math.round(24*60-m);
+    document.getElementById('popup-updated').textContent=`Updated ${timeAgo} · resets in ${Math.floor(expiresIn/60)}h${expiresIn%60}m`;
+    badge.style.display='inline-flex';
+    if(entry.status==='green'){badge.style.cssText='display:inline-flex;background:rgba(0,194,111,0.12);color:#00C26F;';badge.textContent='✓ Bourse available';}
+    else{badge.style.cssText='display:inline-flex;background:rgba(255,59,59,0.12);color:#FF3B3B;';badge.textContent='✗ No bourse reported';}
+  } else {
+    document.getElementById('popup-updated').textContent='Not yet reported today — be first!';
+    badge.style.display='none';
+  }
+
+  if(st==='active'){
+    actions.style.display='flex';
+  } else {
+    actions.style.display='none';
+    if(st==='before') document.getElementById('popup-updated').textContent='⏳ Bourse period not started yet';
+    else if(st==='after') document.getElementById('popup-updated').textContent='✗ Bourse period has ended';
+    else if(!st) document.getElementById('popup-updated').textContent='ℹ No bourse period set';
+  }
+
+  renderMarkers();
+  document.getElementById('popup-panel').style.display='block';
+}
+
+function closePopup(){
+  document.getElementById('popup-panel').style.display='none';
+  const prev=selectedBank; selectedBank=null;
+  if(prev&&markers[prev.id]){const e=statuses[prev.id],s=e?e.status:'blue';markers[prev.id].setIcon(makeIcon(s,false));}
+}
+
+function selectTransport(mode){
+  travelMode=mode;
+  ['walking','driving','transit'].forEach(m=>document.getElementById('t-'+m).classList.toggle('active',m===mode));
+}
+
+function openDirections(){
+  if(!selectedBank) return;
+  const dest=`${selectedBank.lat},${selectedBank.lng}`;
+  const origin=userLat&&userLng?`&origin=${userLat},${userLng}`:'';
+  window.open(`https://www.google.com/maps/dir/?api=1${origin}&destination=${dest}&travelmode=${travelMode}`,'_blank');
+}
+
+async function setStatus(color){
+  if(!selectedBank) return;
+  try{
+    const res=await fetch('/api/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bankId:selectedBank.id,status:color})});
+    if(!res.ok){const e=await res.json();showToast('Error: '+e.error);return;}
+    await refreshStatuses();
+    openPopup(selectedBank);
+    showToast(color==='green'?'✓ Reported — bourse available!':'✗ Reported — no bourse here');
+  } catch(e){showToast('Network error');}
+}
+
+async function refreshStatuses(){
+  try{const res=await fetch('/api/statuses');statuses=await res.json();renderMarkers();renderBankList(document.getElementById('search').value);}catch(e){}
+}
+async function refreshPeriod(){
+  try{const res=await fetch('/api/period');period=await res.json();updateBadge();}catch(e){}
+}
+
+function requestLocation(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    userLat=pos.coords.latitude; userLng=pos.coords.longitude;
+    document.getElementById('loc-note').textContent='✅ Location shared';
+    document.getElementById('loc-note').style.color='var(--green)';
+    if(window._userMarker) window._userMarker.remove();
+    window._userMarker=L.circleMarker([userLat,userLng],{radius:7,color:'#fff',fillColor:'#1E6FFF',fillOpacity:1,weight:2}).addTo(map).bindTooltip('You are here');
+  },()=>{});
+}
+
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+window.addEventListener('load',async()=>{
+  map=L.map('map').setView([31.625,-8.010],13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  map.on('click',e=>{if(e.originalEvent.target.id==='map') closePopup();});
+  await Promise.all([refreshPeriod(),refreshStatuses()]);
+  setInterval(refreshStatuses,30000);
+  requestLocation();
+});
+</script>
+</body>
+</html>

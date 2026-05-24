@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Bourse Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{--green:#00C26F;--red:#FF3B3B;--blue:#1E6FFF;--gold:#C9A84C;--bg:#0E0F0C;--surface:#181910;--surface2:#222318;--border:rgba(255,255,255,0.07);--text:#F5F4EE;--muted:#888880;}
+    body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    header{padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);}
+    .logo{display:flex;align-items:center;gap:10px;}
+    .logo-icon{width:34px;height:34px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:17px;}
+    .logo-text{font-family:"Syne",sans-serif;font-weight:700;font-size:16px;}
+    .logo-sub{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+    .header-badge{font-size:11px;padding:4px 10px;border-radius:100px;background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);font-weight:500;}
+    a.back-link{font-size:13px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color .15s;}
+    a.back-link:hover{color:var(--text);}
+    .page{max-width:960px;margin:0 auto;padding:2rem 1.5rem;}
+    h1{font-family:"Syne",sans-serif;font-weight:700;font-size:24px;margin-bottom:.35rem;}
+    .page-sub{font-size:14px;color:var(--muted);margin-bottom:2rem;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem;}
+    @media(max-width:640px){.grid{grid-template-columns:1fr;}}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;}
+    .card-title{font-family:"Syne",sans-serif;font-weight:600;font-size:14px;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+    .field{margin-bottom:12px;}
+    label{display:block;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
+    input[type=date],input[type=password]{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:"DM Sans",sans-serif;outline:none;transition:border-color .15s;}
+    input:focus{border-color:rgba(201,168,76,0.5);}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:"Syne",sans-serif;transition:opacity .15s,transform .1s;}
+    .btn:hover{opacity:.88;} .btn:active{transform:scale(.97);}
+    .btn-gold{background:var(--gold);color:#1a1500;width:100%;margin-top:4px;}
+    .btn-red{background:rgba(255,59,59,0.1);color:var(--red);border:1px solid rgba(255,59,59,0.25);width:100%;margin-top:8px;}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid var(--border);width:100%;margin-top:8px;}
+    .status-current{background:var(--surface2);border-radius:9px;padding:10px 14px;font-size:13px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+    .status-label{color:var(--muted);font-size:12px;}
+    .pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:100px;}
+    .pill-active{background:rgba(0,194,111,0.15);color:var(--green);}
+    .pill-before{background:rgba(201,168,76,0.15);color:var(--gold);}
+    .pill-after{background:rgba(255,59,59,0.15);color:var(--red);}
+    .pill-none{background:rgba(136,136,128,0.15);color:var(--muted);}
+    .bank-table{width:100%;border-collapse:collapse;}
+    .bank-table th{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);}
+    .bank-table td{font-size:13px;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+    .bank-table tr:last-child td{border-bottom:none;}
+    .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+    .time-cell{font-size:11px;color:var(--muted);}
+    .stats-row{display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;}
+    .stat-box{flex:1;min-width:100px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;}
+    .stat-num{font-family:"Syne",sans-serif;font-weight:700;font-size:26px;margin-bottom:2px;}
+    .stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid rgba(255,255,255,0.12);border-radius:100px;padding:10px 20px;font-size:13px;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+    .toast.show{transform:translateX(-50%) translateY(0);}
+    #login-screen{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;justify-content:center;}
+    .login-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:2rem;width:320px;text-align:center;}
+    .login-icon{font-size:40px;margin-bottom:1rem;}
+    .login-title{font-family:"Syne",sans-serif;font-weight:700;font-size:20px;margin-bottom:.4rem;}
+    .login-sub{font-size:13px;color:var(--muted);margin-bottom:1.5rem;}
+    #login-error{font-size:12px;color:var(--red);margin-top:8px;display:none;}
+    .divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">Admin access</div>
+    <div class="login-sub">Enter the admin password to continue</div>
+    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')tryLogin()"/>
+    <div id="login-error">Incorrect password</div>
+    <button class="btn btn-gold" style="margin-top:12px;" onclick="tryLogin()">Login</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏦</div>
+    <div>
+      <div class="logo-text">Bourse Tracker</div>
+      <div class="logo-sub">Admin Dashboard</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="header-badge">⚙ Admin</span>
+    <a href="/" class="back-link">← User view</a>
+  </div>
+</header>
+
+<div class="page">
+  <h1>Dashboard</h1>
+  <p class="page-sub">Manage the bourse period and monitor real-time bank statuses.</p>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-num" id="stat-green" style="color:var(--green)">0</div><div class="stat-lbl">Bourse available</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-red" style="color:var(--red)">0</div><div class="stat-lbl">No bourse</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-blue" style="color:#C9A84C">0</div><div class="stat-lbl">Not reported</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-total" style="color:var(--gold)">0</div><div class="stat-lbl">Total branches</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-title"><span>📅</span> Bourse Period</div>
+      <div class="status-current">
+        <div>
+          <div class="status-label">Current period</div>
+          <div style="font-weight:500;font-size:13px;" id="current-period-text">Not set</div>
+        </div>
+        <div id="current-period-pill" class="pill pill-none">Not set</div>
+      </div>
+      <div class="field"><label>Start date</label><input type="date" id="start-date"/></div>
+      <div class="field"><label>End date</label><input type="date" id="end-date"/></div>
+      <button class="btn btn-gold" onclick="savePeriod()">Save period</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>🔧</span> Tools</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Use these tools carefully — actions cannot be undone.</p>
+      <button class="btn btn-red" onclick="resetAll()">🗑 Reset all bank statuses</button>
+      <button class="btn btn-outline" onclick="logout()">🔓 Logout</button>
+      <hr class="divider">
+      <div class="card-title" style="margin-bottom:.75rem;"><span>🔑</span> Change Password</div>
+      <div class="field"><label>New password</label><input type="password" id="new-pw" placeholder="Enter new password"/></div>
+      <button class="btn btn-gold" onclick="changePassword()">Update password</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:1rem;"><span>🗺</span> Live Branch Status</div>
+    <table class="bank-table">
+      <thead><tr><th>Branch</th><th>Address</th><th>Status</th><th>Last updated</th></tr></thead>
+      <tbody id="bank-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_PW_KEY = 'bourse_admin_pw';
+const SESSION_KEY = 'bourse_admin_session';
+const DEFAULT_PW = 'admin257';
+
+const BANKS = [
+  // --- Guéliz / Centre ---
+  {id:'b01', name:'Agence Guéliz — Av. Mohammed V',       address:'65 Av. Mohammed V'},
+  {id:'b02', name:'Agence Bd Abdelkrim Al Khattabi',      address:'Bd Abdelkrim Al Khattabi'},
+  {id:'b03', name:'Siège Régional BP',                    address:'Bd Abdelkrim Al Khattabi (Siège)'},
+  {id:'b04', name:'Agence Majorelle — Av. Yacoub',        address:'7 Av. Yacoub El Mansour'},
+  {id:'b05', name:'Agence Ibn Tofail',                    address:'Av. Ibn Tofail, Guéliz'},
+  {id:'b06', name:'Agence Allal El Fassi (1)',            address:'Bd Allal El Fassi'},
+  {id:'b07', name:'Agence Allal El Fassi (2) — 46',      address:'46 Bd Allal El Fassi'},
+  {id:'b08', name:'Agence Av. Omar Khayyam',              address:'Av. Omar Khayyam'},
+  {id:'b09', name:'Agence Av. Mohammadia',                address:'Av. Mohammadia'},
+  {id:'b10', name:'Agence Marrakech Plaza',               address:'Av. Mohammed V (Plaza)'},
+  // --- Izdihar / Mabrouka / Targa / Sidi Ghanem ---
+  {id:'b11', name:'Agence Izdihar',                       address:'841 Route de Safi'},
+  {id:'b12', name:'Agence Mabrouka',                      address:'Quartier Mabrouka'},
+  {id:'b13', name:'Agence Sidi Ghanem',                   address:'Zone Sidi Ghanem'},
+  {id:'b14', name:'Agence Targa',                         address:'Quartier Targa'},
+  {id:'b15', name:'Agence Daoudiate',                     address:'Quartier Daoudiate'},
+  {id:'b16', name:'Agence Amarchich',                     address:'Quartier Amarchich'},
+  {id:'b17', name:'Agence Aïn Mezouar',                   address:'Quartier Aïn Mezouar'},
+  // --- Médina ---
+  {id:'b18', name:'Agence Place Jemaa El Fna',            address:'Place Jemaa El Fna'},
+  {id:'b19', name:'Agence Koutoubia',                     address:'Près de la Koutoubia, Médina'},
+  {id:'b20', name:'Agence Rue Moulay Ismail',             address:'Rue Bani Marine, Médina'},
+  {id:'b21', name:'Agence Rue Boutouil',                  address:'Rue Boutouil, Médina'},
+  {id:'b22', name:'Agence Rue El Imam Malik',             address:'Rue El Imam Malik, Médina'},
+  {id:'b23', name:'Agence Rue Ibn Aicha',                 address:'Rue Ibn Aicha, Médina'},
+  {id:'b24', name:'Agence Rue Riad Laarous',              address:'Rue Riad Laarous, Médina'},
+  {id:'b25', name:'Agence Riad Salam',                    address:'Quartier Riad Salam'},
+  {id:'b26', name:'Agence Av. Imam Mouslim',              address:'Av. Imam Mouslim'},
+  {id:'b27', name:'Agence N7 — Immeuble Yassmine',        address:'N7, Immeuble Yassmine'},
+  {id:'b28', name:'Agence Door Gmat — Av. Al Oued',       address:'Av. Al Oued, Door Gmat'},
+  // --- Menara / Agdal ---
+  {id:'b29', name:'Agence Menara — Av. Moulay Hassan',    address:'Av. Moulay El Hassan'},
+  {id:'b30', name:'Agence Khattabi',                      address:'Bd Abdelkrim Al Khattabi (sud)'},
+  // --- Route de Fès / Est ---
+  {id:'b31', name:'Agence Route de Fès (1)',              address:'150 Route de Fès'},
+  {id:'b32', name:'Agence Route de Fès (2)',              address:'Route de Fès (nord)'},
+  {id:'b33', name:'Guichet Av. El Glaoui',                address:'Av. El Glaoui'},
+  // --- Hay Hassani / Al Andalibe / Ouest ---
+  {id:'b34', name:'Agence Al Andalibe',                   address:'Rue Al Andalibe'},
+  {id:'b35', name:'Agence Addoha — Route Agadir',         address:"N8, Route d'Agadir"},
+  {id:'b36', name:'Agence Tinmel — Av. Dakhla',           address:'Av. Dakhla'},
+  {id:'b37', name:'Agence Tayiba',                        address:'Quartier Tayiba'},
+  {id:'b38', name:'Agence Hay Hassani',                   address:'Hay Hassani'},
+  {id:'b39', name:'Agence Bentachfine',                   address:'Quartier Bentachfine'},
+  // --- Atlas / Guemassa / Sud ---
+  {id:'b40', name:'Agence Atlas — Av. Guemassa',          address:'Av. Guemassa, Atlas'},
+  {id:'b41', name:'Agence Av. Guemassa (2)',              address:'Av. Guemassa (sud)'},
+  {id:'b42', name:'Agence Maatalah',                      address:'Quartier Maatalah'},
+  {id:'b43', name:'Agence Hay Mohammadi',                 address:'Hay Mohammadi (sud)'},
+  {id:'b44', name:'Agence Al Orouba',                     address:'Av. Al Orouba'},
+  // --- M'hamid / Sidi Youssef ---
+  {id:'b45', name:"Agence M'hamid",                       address:"Quartier M'hamid"},
+  {id:'b46', name:'Agence Sidi Youssef Ben Ali',          address:'Av. Sidi Youssef Ben Ali'},
+  {id:'b47', name:'Agence Rue Jamiaat Ben Youssef',        address:'Rue Jamiaat Ben Youssef'},
+];
+
+let statuses = {}, period = {};
+
+function getStoredPw(){ return localStorage.getItem(ADMIN_PW_KEY) || DEFAULT_PW; }
+
+function tryLogin(){
+  const pw = document.getElementById('pw-input').value;
+  if(pw === getStoredPw()){
+    sessionStorage.setItem(SESSION_KEY,'1');
+    document.getElementById('login-screen').style.display='none';
+    init();
+  } else {
+    document.getElementById('login-error').style.display='block';
+  }
+}
+
+function logout(){ sessionStorage.removeItem(SESSION_KEY); location.reload(); }
+
+function changePassword(){
+  const np = document.getElementById('new-pw').value.trim();
+  if(np.length < 4){ showToast('Password must be at least 4 characters'); return; }
+  localStorage.setItem(ADMIN_PW_KEY, np);
+  document.getElementById('new-pw').value = '';
+  showToast('✓ Password updated');
+}
+
+function isWithinPeriod(){
+  if(!period.start_date || !period.end_date) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const s = new Date(period.start_date), e = new Date(period.end_date);
+  if(now < s) return 'before'; if(now > e) return 'after'; return 'active';
+}
+
+async function savePeriod(){
+  const s = document.getElementById('start-date').value;
+  const e = document.getElementById('end-date').value;
+  if(!s || !e){ showToast('Fill both dates'); return; }
+  if(new Date(s) > new Date(e)){ showToast('Start must be before end'); return; }
+  await fetch('/api/period',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({startDate:s,endDate:e})});
+  period = {start_date:s, end_date:e};
+  updatePeriodUI();
+  showToast('✓ Period saved: ' + s + ' → ' + e);
+}
+
+function updatePeriodUI(){
+  const st = isWithinPeriod();
+  const txt = document.getElementById('current-period-text');
+  const pill = document.getElementById('current-period-pill');
+  if(!period.start_date){ txt.textContent='Not set'; pill.className='pill pill-none'; pill.textContent='Not set'; return; }
+  txt.textContent = period.start_date + ' → ' + period.end_date;
+  if(st==='active'){ pill.className='pill pill-active'; pill.textContent='Active'; }
+  else if(st==='before'){ pill.className='pill pill-before'; pill.textContent='Upcoming'; }
+  else { pill.className='pill pill-after'; pill.textContent='Ended'; }
+  if(period.start_date) document.getElementById('start-date').value = period.start_date;
+  if(period.end_date) document.getElementById('end-date').value = period.end_date;
+}
+
+async function resetAll(){
+  if(!confirm('Reset ALL bank statuses? Cannot be undone.')) return;
+  await fetch('/api/statuses',{method:'DELETE'});
+  statuses = {};
+  renderTable();
+  updateStats();
+  showToast('All statuses reset');
+}
+
+function colorOf(s){ return s==='green'?'#00C26F':s==='red'?'#FF3B3B':'#C9A84C'; }
+function labelOf(s){ return s==='green'?'Bourse available':s==='red'?'No bourse':'Not reported'; }
+
+function renderTable(){
+  const tbody = document.getElementById('bank-tbody');
+  tbody.innerHTML = BANKS.map(b => {
+    const entry = statuses[b.id], status = entry ? entry.status : 'blue', color = colorOf(status);
+    let timeStr = '—';
+    if(entry){ const m = Math.round((Date.now()-entry.updatedAt)/60000); timeStr = m<60 ? m+'min ago' : Math.floor(m/60)+'h ago'; }
+    return '<tr><td style="font-weight:500;">'+b.name+'</td><td style="color:var(--muted);font-size:12px;">'+b.address+'</td><td><span style="display:inline-flex;align-items:center;gap:5px;"><span class="dot" style="background:'+color+'"></span>'+labelOf(status)+'</span></td><td class="time-cell">'+timeStr+'</td></tr>';
+  }).join('');
+}
+
+function updateStats(){
+  const g = BANKS.filter(b => statuses[b.id]&&statuses[b.id].status==='green').length;
+  const r = BANKS.filter(b => statuses[b.id]&&statuses[b.id].status==='red').length;
+  document.getElementById('stat-green').textContent = g;
+  document.getElementById('stat-red').textContent = r;
+  document.getElementById('stat-blue').textContent = BANKS.length - g - r;
+  document.getElementById('stat-total').textContent = BANKS.length;
+}
+
+async function refreshStatuses(){
+  try{ const res = await fetch('/api/statuses'); statuses = await res.json(); renderTable(); updateStats(); }catch(e){}
+}
+async function refreshPeriod(){
+  try{ const res = await fetch('/api/period'); period = await res.json(); updatePeriodUI(); }catch(e){}
+}
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+async function init(){
+  await Promise.all([refreshPeriod(), refreshStatuses()]);
+  setInterval(refreshStatuses, 15000);
+}
+
+window.addEventListener('load', () => {
+  if(sessionStorage.getItem(SESSION_KEY) === '1'){
+    document.getElementById('login-screen').style.display = 'none';
+    init();
+  }
+});
+</script>
+</body>
+</html>
