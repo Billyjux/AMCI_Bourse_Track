@@ -5,7 +5,7 @@ A real-time map app for international students at Marrakech to share which Bank 
 ## How it works
 
 - Map shows all Bank Populaire branches in Marrakech
-- **Blue** = not yet reported today
+- **yellow** = not yet reported today
 - **Green** = bourse available (someone just withdrew there)
 - **Red** = no bourse (hit the daily limit)
 - All statuses **auto-reset every 24 hours**
